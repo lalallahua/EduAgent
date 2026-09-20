@@ -1,0 +1,63 @@
+# ========================
+# Python
+# ========================
+.venv/
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ========================
+# Node / Next.js
+# ========================
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+coverage/
+
+# ========================
+# Environment
+# ========================
+.env
+.env.local
+.env.*.local
+
+# Keep example env
+!.env.example
+
+# ========================
+# IDE
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+
+# ========================
+# Logs
+# ========================
+*.log
+logs/
+
+# ========================
+# Runtime / generated
+# ========================
+tmp/
+uploads/
+exports/
+
+# ========================
+# Docker local data
+# ========================
+docker-data/

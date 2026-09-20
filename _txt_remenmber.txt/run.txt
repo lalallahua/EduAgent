@@ -1,0 +1,20 @@
+切换用户：
+su - eduagent
+
+检查是哪一个用户在执行操作：
+whoami
+
+激活创建的虚拟环境
+source .venv/bin/activate
+
+启动基础设施：
+docker compose up -d 
+
+-d 表示的意思时后台运行
+
+查看：
+docker compose ps
+
+查看日志：
+docker compose logs --tail=100
+

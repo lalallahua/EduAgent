@@ -1,0 +1,10 @@
+{
+  "name": "eduagent",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "dev:teacher": "pnpm --dir apps/teacher-web dev",
+    "dev:student": "pnpm --dir apps/student-web dev -- --port 3001"
+  }
+}

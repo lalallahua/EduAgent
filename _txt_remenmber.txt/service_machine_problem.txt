@@ -1,0 +1,35 @@
+下载依赖的时候连接vscode的服务器断线重连且连不上
+
+扩大swap
+
+创建新的swap
+
+sudo fallocate -l 4G /www/swap4g
+sudo chmod 600 /www/swap4g
+sudo mkswap /www/swap4g
+sudo swapon /www/swap4g 
+
+检查：
+swapon --show
+
+关掉旧的swap
+
+执行命令sudo sed -i 's#/www/swap #/www/swap4g #' /etc/fstab 
+
+如果显示的是旧的swap  执行 sudo sed -i 's#/www/swap #/www/swap4g #' /etc/fstab
+
+删掉旧文件 sudo rm -f /www/swap
+
+又或者是内存太小了
+只有约1.6GiB RAM 对vscode remote + codex + pnpm/next.js + Docker来说太紧了
+
+vscode以eduagent跑
+
+把swap扩到4GiB
+
+安装依赖时用普通SSH +tmux 不要依赖VS code Terminal
+
+后续还是需要把ECS从当前约2G档升级到至少约4G RAM
+
+
+
