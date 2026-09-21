@@ -1,0 +1,85 @@
+查看当前状态：
+git status
+
+查看代码修改了什么：
+git diff
+
+添加所有修改到暂存区：
+git add .
+
+添加某一个文件到暂存区
+git add README.md
+
+添加某个目录：
+git add apps/student-web
+
+提交代码：
+git commit -m "xxx"
+
+上传到GitHub:
+git push
+
+第一次新分支可能要：
+git push -u origin main
+
+从GitHub拉取最新代码：
+git pull
+
+明确一点的拉取最新代码：
+git pull origin main
+
+查看提交历史：
+git log --oneline
+
+查看当前分支：
+git branch
+
+切换分支：
+git switch main
+
+创建新分支：
+git switch -c feature/xxx
+
+把开发分支合并到main:
+例如已经完成了：
+feature/course-api
+先：
+git switch main
+再更新main:
+git pull
+然后：
+git merge feature/course-api
+最后：
+git push
+
+删除分支：
+本地：
+git branch -d feature/course-api
+如果Git认为还没合并，不允许删除
+强制删除：
+git branch -D feature/course-api
+删除GitHub远程分支：
+git push origin --delete feature/course-api
+
+已经git add 但是不想提交：
+取消整个暂存区：
+git restore --staged .
+git restore --staged 文件
+恢复所有未暂存修改：
+git restore .
+git restore 文件
+想恢复成上一次commit(例如修改坏了apps/student-web/src/app/page.tsx):
+git restore apps/student-web/src/app/page.tsx
+
+临时保存修改：stash
+代码会临时保存：
+git stash
+查看：
+git stash list
+恢复：
+git stash pop
+如果想写备注：
+git stash push -m "student web unfinished"
+
+查看远程GitHub地址：
+git remote -v

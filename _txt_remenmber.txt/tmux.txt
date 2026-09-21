@@ -1,3 +1,77 @@
 安装tmux
 sudo yum install tmux -y
 
+目前先创建五个tmux
+
+teacher tmux
+tmux new -s teacher
+
+student tmux
+tmux new -s student
+
+install tmux
+tmux new -s install
+
+监控tmux
+tmux new -s monitor
+监控命令：watch -n 1 free -h
+
+git tmux
+tmux new -s git
+
+进入 相应tmux 后，按 Ctrl+B，然后 D 离开
+
+如果想创建但是不进入的话
+tmux new-session -d -s teacher
+tmux new-session -d -s student
+tmux new-session -d -s install
+tmux new-session -d -s monitor
+tmux new-session -d -s git
+
+-d表示后台创建 不attach
+
+
+
+查看有多少个tmux
+tmux ls
+
+当前窗口不属于任何一个tmux的情况下选择一个tmux进入
+tmux attach -t teacher
+简写
+tmux a -t teacher
+
+查看当前属于哪个tmux
+tmux display-message -p '#S'
+
+如果
+echo $TMUX
+什么都没有输出 说明当前不在tmux
+
+当前窗口属于一个tmux 但是需要进入另一个tmux
+tmux switch-client -t student
+
+离开当前tmux 但让里面程序继续运行
+Ctrl+B
+然后松开
+再按 D
+
+查看某个tmux里的最后输出，不进入它
+tmux capture-pane -pt teacher | tail -30
+
+关掉当前tmux里的所有进程最好的方法是删除这个tmux：
+tmux kill-session -t teacher
+
+停止tmux的前台程序 按下ctrl+c就好
+
+删除当前所在的tmux
+tmux kill-session
+
+删除所有tmux
+tmux kill-server
+
+强制接管另一个终端正在使用的tmux
+tmux attach -d -t teacher
+简写
+tmux a -d -t teacher
+
+

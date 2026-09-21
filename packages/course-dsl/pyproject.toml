@@ -1,0 +1,18 @@
+[project]
+name = "eduagent-course-dsl"
+version = "0.1.0"
+description = "Versioned Course DSL contract for EduAgent"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "pydantic>=2.0",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+sources = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eduagent_course_dsl"]

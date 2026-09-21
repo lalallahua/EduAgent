@@ -1,69 +1,265 @@
-import Image from "next/image";
+"use client";
+
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+
+type Course = {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  current_version_id: string | null;
+  version_no: number | null;
+  version_state: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://localhost:8000";
+
+const DEV_USER_ID =
+  process.env.NEXT_PUBLIC_DEV_USER_ID ??
+  "00000000-0000-0000-0000-000000000001";
+
 
 export default function Home() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+
+  const loadCourses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/courses`,
+        {
+          headers: {
+            "X-User-Id": DEV_USER_ID,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load courses: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      setCourses(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unknown error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+
+  async function createCourse(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    if (!title.trim()) {
+      return;
+    }
+
+    setCreating(true);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/courses`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": DEV_USER_ID,
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description:
+              description.trim() || null,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const body = await response.text();
+
+        throw new Error(
+          `Failed to create course: ${response.status} ${body}`
+        );
+      }
+
+      setTitle("");
+      setDescription("");
+
+      await loadCourses();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unknown error"
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="min-h-screen bg-zinc-50 px-6 py-12 text-zinc-950">
+      <div className="mx-auto max-w-5xl space-y-10">
+
+        <header>
+          <p className="text-sm font-medium text-zinc-500">
+            EduAgent · Teacher Workbench
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+          <h1 className="mt-2 text-4xl font-semibold tracking-tight">
+            Courses
+          </h1>
+
+          <p className="mt-3 text-zinc-600">
+            Create and manage versioned AI courses.
+          </p>
+        </header>
+
+
+        <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold">
+            Create course
+          </h2>
+
+          <form
+            className="mt-6 space-y-4"
+            onSubmit={createCourse}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Title
+              </label>
+
+              <input
+                className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none focus:border-zinc-900"
+                value={title}
+                onChange={(event) =>
+                  setTitle(event.target.value)
+                }
+                placeholder="Transformer 101"
+                maxLength={200}
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Description
+              </label>
+
+              <textarea
+                className="min-h-28 w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none focus:border-zinc-900"
+                value={description}
+                onChange={(event) =>
+                  setDescription(event.target.value)
+                }
+                placeholder="Course description"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={creating || !title.trim()}
+              className="rounded-lg bg-zinc-950 px-5 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {creating
+                ? "Creating..."
+                : "Create Course"}
+            </button>
+          </form>
+        </section>
+
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+            {error}
+          </div>
+        )}
+
+
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">
+              Your courses
+            </h2>
+
+            <button
+              onClick={loadCourses}
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-950"
+            >
+              Refresh
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="text-zinc-500">
+              Loading courses...
+            </p>
+          ) : courses.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500">
+              No courses yet.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {courses.map((course) => (
+                <article
+                  key={course.id}
+                  className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
+                >
+                  <h3 className="text-xl font-semibold">
+                    {course.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm text-zinc-600">
+                    {course.description ||
+                      "No description"}
+                  </p>
+
+                  <div className="mt-6 flex gap-2 text-xs">
+                    <span className="rounded-full bg-zinc-100 px-3 py-1">
+                      v{course.version_no ?? "—"}
+                    </span>
+
+                    <span className="rounded-full bg-zinc-100 px-3 py-1">
+                      {course.version_state ??
+                        "unknown"}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

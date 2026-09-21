@@ -2,6 +2,12 @@ version = 1
 revision = 3
 requires-python = "==3.11.*"
 
+[manifest]
+members = [
+    "eduagent-backend",
+    "eduagent-course-dsl",
+]
+
 [[package]]
 name = "alembic"
 version = "1.20.0"
@@ -97,6 +103,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
+    { name = "eduagent-course-dsl" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "pydantic" },
@@ -116,6 +123,7 @@ dev = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.20.0" },
     { name = "asyncpg", specifier = ">=0.31.0" },
+    { name = "eduagent-course-dsl", editable = "packages/course-dsl" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pydantic", specifier = ">=2.13.5" },
@@ -130,6 +138,17 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "ruff", specifier = ">=0.16.8" },
 ]
+
+[[package]]
+name = "eduagent-course-dsl"
+version = "0.1.0"
+source = { editable = "packages/course-dsl" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.0" }]
 
 [[package]]
 name = "fastapi"

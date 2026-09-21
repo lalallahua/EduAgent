@@ -18,3 +18,31 @@ docker compose ps
 查看日志：
 docker compose logs --tail=100
 
+确保PostgreSQL已经运行：
+如果没有运行：
+docker compose up -d --pull never
+测试PostgreSQL:
+docker exec eduagent-postgres   pg_isready -U eduagent -d eduagent
+应该返回：
+/var/run/postgresql:5432 - accepting connections
+
+创建一个course tmux 启动 Course Service
+tmux new -s course
+uv run uvicorn \
+  services.course_service.app.main:app \
+  --host 0.0.0.0 \
+  --port 8001 \
+  --reload
+
+启动API Gateway先启动一个新的tmux
+tmux new -s gateway
+uv run uvicorn \
+  services.api_gateway.app.main:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --reload
+
+启动Teacher web
+tmux new -s teacher
+pnpm dev:teacher
+
