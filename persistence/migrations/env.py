@@ -11,7 +11,7 @@ from services.course_service.app.db.base import Base
 # Important:
 # Import ORM models so that they are registered in Base.metadata
 import services.course_service.app.models  # noqa: F401
-
+import services.knowledge_service.app.models
 
 config = context.config
 

@@ -1,0 +1,20 @@
+问题：PDF 产生的 chunk 数超过了单次 embedding 请求允许的输入条数
+现在应该正式把 Embedding Provider 从：
+
+所有 chunks
+    ↓
+一次 API 请求
+
+修改成：
+
+所有 chunks
+    ↓
+batch 1：最多20条
+batch 2：最多20条
+batch 3：最多20条
+...
+    ↓
+合并 embeddings
+
+这也是 M2 必须补上的真实工程能力
+

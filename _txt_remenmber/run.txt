@@ -9,6 +9,7 @@ source .venv/bin/activate
 
 启动基础设施：
 docker compose up -d 
+docker compose start postgres minio
 
 -d 表示的意思时后台运行
 
@@ -41,6 +42,13 @@ uv run uvicorn \
   --host 0.0.0.0 \
   --port 8000 \
   --reload
+
+启动Knowledge Service:
+tmux new -s knowledge
+uv run uvicorn \
+  services.knowledge_service.app.main:app \
+  --host 0.0.0.0 \
+  --port 8002
 
 启动Teacher web
 tmux new -s teacher

@@ -5,7 +5,9 @@ import httpx
 from fastapi import FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
+from services.api_gateway.app.routes.knowledge import (
+    router as knowledge_router,
+)
 
 COURSE_SERVICE_URL = os.getenv(
     "COURSE_SERVICE_URL",
@@ -108,3 +110,7 @@ async def list_courses(
         status_code=response.status_code,
         content=response.json(),
     )
+
+app.include_router(
+    knowledge_router,
+)

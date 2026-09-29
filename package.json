@@ -5,6 +5,6 @@
   "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev:teacher": "pnpm --dir apps/teacher-web dev",
-    "dev:student": "pnpm --dir apps/student-web dev -- --port 3001"
+    "dev:student": "pnpm --dir apps/student-web dev --port 3001"
   }
 }

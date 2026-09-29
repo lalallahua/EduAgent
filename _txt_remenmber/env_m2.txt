@@ -1,0 +1,278 @@
+启动需要的基础设施：
+docker compose start postgres minio
+
+安装Python依赖：
+uv add \
+  minio \
+  python-multipart \
+  pypdf \
+  python-pptx \
+  python-docx \
+  pgvector
+
+然后 uv sync
+
+给.env增加Knowledge配置
+
+MATERIAL_MAX_BYTES=52428800
+
+CHUNK_MAX_CHARS=1200
+CHUNK_OVERLAP_CHARS=200
+
+# Development embedding provider.
+# M3 前必须换成真实 semantic embedding provider 做质量验证。
+EMBEDDING_PROVIDER=dev_hash
+EMBEDDING_DIMENSION=384
+
+# Optional OpenAI-compatible embedding endpoint
+EMBEDDING_BASE_URL=
+EMBEDDING_API_KEY=
+EMBEDDING_MODEL=
+
+这里的每个字段都起到什么作用 字段的值是怎么选择的
+
+pgvector 官方支持不固定维度的 vector 字段；
+代价是近似索引需要针对固定维度单独建立，所以 M2 小规模阶段先使用 exact search，不建立 HNSW。
+
+什么是HNSW???
+
+建立Knowledge Service目录
+
+Knowledge Service配置：
+cat > services/knowledge_service/app/core/config.py
+
+建立Knowledge Service DB Session
+cat > services/knowledge_service/app/db/session.py
+
+建立Knowledge数据模型：
+继续复用M1的Base 确保Alembic看到同一个metadata
+cat > services/knowledge_service/app/models/knowledge.py
+
+注册Knowledge Models:
+cat > services/knowledge_service/app/models/__init__.py
+
+检查Alembic Metadata:
+uv run python - <<'PY'
+from services.course_service.app.db.base import Base
+
+import services.course_service.app.models
+import services.knowledge_service.app.models
+
+print("Registered tables:")
+
+for table in sorted(Base.metadata.tables):
+    print(" -", table)
+PY
+
+生成Alembic Migration:
+uv run alembic revision \
+  --autogenerate \
+  -m "add material rag evidence domain"
+
+uv run alembic upgrade head
+uv run alembic current
+
+MinIO Storage Adapter
+创建 cat > services/knowledge_service/app/services/storage.py
+
+Material Parser:
+第一版支持真正有文本内容的PDF PPTX DOCX TXT MD
+图片、音视频 M2 可以进入 Asset/Material，但 OCR/ASR 不要在这里硬塞进去；
+真正的媒体理解以后进入 Media/TTS/ASR 阶段。
+技术报告本身也把 media-service 单独规划出来。
+cat > services/knowledge_service/app/services/parsers.py
+
+Chunker:
+cat > services/knowledge_service/app/services/chunker.py
+当前这个文件的token_count 是近似值
+后面真正provider/model 固定后 可以改为其tokennizer的精确token count
+
+Embedding Provider:
+cat > services/knowledge_service/app/services/embeddings.py
+
+dev_hash只能作为工程smoke test 
+在M3之前必须换成真实semantic embedding 然后重新评估retrivel  需要换一下这个模型 算则api key
+
+Material DTO:
+cat > services/knowledge_service/app/schemas/material.py 
+
+Knowledge Repository:
+cat > services/knowledge_service/app/repositories/knowledge_repository.py
+
+Material Processor:
+cat > services/knowledge_service/app/services/material_processor.py
+
+Knowledge Search:
+cat > services/knowledge_service/app/services/search_service.py 
+pgvector 的 SQLAlchemy integration 原生提供 cosine_distance() 等 nearest-neighbor 操作，
+因此这里不需要自己手写 <=> SQL
+
+Material Upload Routes:
+cat > services/knowledge_service/app/api/routes/materials.py 
+
+Knowledge Search Route:
+cat > services/knowledge_service/app/api/routes/search.py
+
+启动Knowledge Service:
+cat > services/knowledge_service/app/main.py 
+
+Gateway 接入 Knowledge Service:
+创建gateway route:
+mkdir -p services/api_gateway/app/routes
+touch services/api_gateway/app/routes/__init__.py
+
+创建：
+cat > services/api_gateway/app/routes/knowledge.py
+
+在Gateway main.py注册
+在service/api_gateway/app/main.py
+增加：
+from services.api_gateway.app.routes.knowledge import (
+    router as knowledge_router,
+)
+app.include_router(
+    knowledge_router,
+)
+现在的链路就变为：
+Client
+ ↓
+API Gateway
+ ↓ X-Trace-Id
+Knowledge Service
+ ↓
+Embedding
+ ↓
+pgvector
+ ↓
+EvidenceRef
+符合技术报告的服务依赖原则：前端只经过Gateway Knowledge Service自己访问 Postgres/pgvector/MinIO
+
+增加最小 Unit Test:
+cat > tests/unit/test_chunker.py
+
+检查最终数据库：
+chunks == embeddings == evidence
+至少在M2正常材料上应该成立
+
+M2 Trace 验收：
+
+
+模型的选择：
+为什么选择qwen3.7-text-embedding而不是text-embedding-v4
+一处给纯文本场景推荐 text-embedding-v4，主要强调它速度、价格和维度灵活性；
+另一处最新模型选择页把 qwen3.7-text-embedding 标为当前性能更强的文本 Embedding，并明确推荐用于文本搜索和 RAG。
+对于 EduAgent，你当前不是超大规模百万文档搜索，而是在做：
+课程 PDF
+课程 PPT
+课程讲义
+课程文档
+        ↓
+
+针对学生问题 / 课程生成
+寻找最相关 Evidence
+现阶段检索质量大于极限成本，所以倾向于qwen3.7-text-embedding 
+而不是为了省一点成本先选flash 
+等以后课程规模非常大，
+再比较qwen3.7-text-embedding和qwen3.7-text-embedding-flash做成本/Recall trade-off
+
+维度为什么选择1024：
+千问官方给出的建议也是：
+256/512 大规模，存储敏感
+1024 通用推荐
+1536/2048更追求检索精度
+2560 更高维，更高存储/计算开销
+对于EduAgent 课程数量初期不大 材料数量不大
+pgvector exact search 更关注Evidence Recall
+1024是最合理的第一版
+不要一开始就上2560 因为向量存储，距离计算都会扩大
+但是没有证明2560比1024给我的课程RAG带来更多的收益
+以后可以实验768 1024 1536
+然后比较Recall@1 Recall@2 Recall@5 MRR Latency Storage再决定最终难度
+
+多模态模型什么时候使用：
+现在的PDF parser:
+page.extract_text()
+其实只拿了文字
+比如一张PPT包含了一张复杂的结构图，但是当前parser只取文字，这张结构图实际上就丢了
+后面EduAgent做到
+PDF page image 
+PPT figure
+chart
+diagram
+formula screenshot
+video
+也称为Evidence后，就需要qwen3-vl-embedding
+官方目前吧qwen3-vl-embedding定义为文本，图片，视频统一语义空间的多模态embedding，并支持融合向量和独立向量
+
+后面还应该有一个Reranker
+当M2后半段真正评估Retrieval时，最终链路不是只Query->Embedding->Top-5
+而是：
+Query
+    ↓
+qwen3.7-text-embedding
+    ↓
+pgvector
+    ↓
+Top-20 candidate chunks
+    ↓
+qwen3.7-text-rerank
+    ↓
+Top-5 Evidence
+千问官方目前也明确建议 RAG 在 Embedding 检索以后接 reranker 来改善排序，并提供 qwen3.7-text-rerank / qwen3-rerank
+
+export COURSE_ID="fd7ef718-f26c-4d32-93b6-694d5627e02c"
+export MATERIAL_ID="3521e818-1378-440a-8692-ff7837807efd"
+
+
+
+现在 MaterialProcessor 是：
+
+POST /process
+        ↓
+同步等：
+parse
+chunk
+embedding 几十次
+DB write
+        ↓
+HTTP response
+
+小文档可以。
+
+但大 PDF 后面可能：
+
+100 pages
+↓
+300 chunks
+↓
+15 embedding batches
+↓
+几秒甚至几十秒
+
+这时：
+
+POST /process
+
+同步阻塞就不好了。
+
+最终 M2/M3 应演化成：
+
+POST /materials/{id}/process
+        ↓
+202 Accepted
+        ↓
+Processing Job
+        ↓
+queued
+        ↓
+processing
+        ↓
+ready / failed
+需要引入Redis worker 
+
+M2当前需要先把同步pipeline跑通：
+PDF-> parse-> chunk-> batch embedding-> pgvector-> Evidence
+等真实 PDF 验收通过，再决定是否在 M2 收尾阶段增加 background job
+
+还有一个reranker
+

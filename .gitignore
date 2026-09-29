@@ -61,3 +61,18 @@ exports/
 # Docker local data
 # ========================
 docker-data/
+
+# Local secrets
+.env
+.env.local
+
+# Local database backups
+backups/
+*.dump
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Next.js
+.next/
